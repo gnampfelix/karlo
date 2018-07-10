@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"time"
+	"math/rand"
 )
 
 type Input struct {
@@ -40,10 +41,32 @@ func (i *Input) GetNext() byte {
 	}
 }
 
+type Ticker struct {
+	hitsPerSecond int
+	maxDeviationInMs int
+	lastTick time.Time
+}
+
+func NewTicker(hitsPerSecond, maxDeviationInMs int) Ticker {
+	return Ticker{
+		hitsPerSecond: hitsPerSecond,
+		maxDeviationInMs: maxDeviationInMs,
+		lastTick: time.Now(),
+	}
+}
+
+func (t *Ticker) Wait() {
+	nextRegularTick := t.lastTick.Add(time.Duration(60000 / t.hitsPerSecond) * time.Millisecond)
+	nextSimulatedTick := nextRegularTick.Add(time.Duration(rand.Int31n(int32(t.maxDeviationInMs))) * time.Millisecond)
+	time.Sleep(time.Until(nextSimulatedTick))
+	t.lastTick = time.Now()
+}
+
 func main() {
 	file := NewInputFromFile("main.go")
+	ticker := NewTicker(4000, 200)
 	for file.HasNext() {
 		fmt.Printf("%s", string(file.GetNext()))
-		time.Sleep(200 * time.Millisecond)
+		ticker.Wait()
 	}
 }
